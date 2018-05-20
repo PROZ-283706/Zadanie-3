@@ -1,11 +1,13 @@
 package application;
 
+import java.util.Optional;
 import java.util.Random;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 
 public class GameController {
@@ -81,19 +83,27 @@ public class GameController {
 
 	public void initialize() {
 		setGameButtonsDisable(true);
-
+		
 		int id = new Random().nextInt(1000000);
 		act = new Player("O", id);
 		myTurn = false;
 		
 		producer = new PTPProducer(act.getPlayerId());
 		consumer = new PTPConsumer(new QueueAsynchConsumer(this), act.getPlayerId());
-
+		
 		position = new char[9];
 		for (int i = 0; i < 9; ++i)
 			position[i] = BLANK;
 
 		producer.sendQueueMessage("wait" + act.getPlayerId() + "");
+	}
+	
+	public void setMyTurn(boolean type) {
+		this.myTurn = type;
+	}
+
+	public String getOpponentChar() {
+		return act.getOpponentChar();
 	}
 
 	private void setGameButtonsDisable(boolean a) {
@@ -118,17 +128,38 @@ public class GameController {
 			gameBtn22.setDisable(a);
 
 	}
+	
+	private void reset() {
+		gameCharLbl.setText(getOpponentChar());
+		act.setGameChar(getOpponentChar());
+		
+		gameBtn00.setText("");
+		gameBtn01.setText("");
+		gameBtn02.setText("");
+		gameBtn10.setText("");
+		gameBtn11.setText("");
+		gameBtn12.setText("");
+		gameBtn20.setText("");
+		gameBtn21.setText("");
+		gameBtn22.setText("");
+		
+		if(act.getGameChar() == "O") {
+			setGameButtonsDisable(true);
+			myTurn = false;
+		}
+		else {
+			setGameButtonsDisable(false);
+			myTurn = true;
+		}
+		
+		for (int i = 0; i < 9; ++i)
+			position[i] = BLANK;
 
-	public void setMyTurn(boolean type) {
-		this.myTurn = type;
-	}
-
-	public String getOpponentChar() {
-		return act.getOpponentChar();
+		producer.sendQueueMessage("newgame"+ act.getPlayerId() + "");
 	}
 
 	// Return true if player has won
-	boolean won(char player) {
+	private boolean won(char player) {
 		for (int i = 0; i < 8; ++i)
 			if (testRow(player, rows[i][0], rows[i][1]))
 				return true;
@@ -136,37 +167,12 @@ public class GameController {
 	}
 
 	// Has player won in the row from position[a] to position[b]?
-	boolean testRow(char player, int a, int b) {
+	private boolean testRow(char player, int a, int b) {
 		return position[a] == player && position[b] == player && position[(a + b) / 2] == player;
 	}
 
-	// Return 0-8 for the position of a blank spot in a row if the
-	// other 2 spots are occupied by player, or -1 if no spot exists
-	int findRow(char player) {
-		for (int i = 0; i < 8; ++i) {
-			int result = find1Row(player, rows[i][0], rows[i][1]);
-			if (result >= 0)
-				return result;
-		}
-		return -1;
-	}
-
-	// If 2 of 3 spots in the row from position[a] to position[b]
-	// are occupied by player and the third is blank, then return the
-	// index of the blank spot, else return -1.
-	int find1Row(char player, int a, int b) {
-		int c = (a + b) / 2; // middle spot
-		if (position[a] == player && position[b] == player && position[c] == BLANK)
-			return c;
-		if (position[a] == player && position[c] == player && position[b] == BLANK)
-			return b;
-		if (position[b] == player && position[c] == player && position[a] == BLANK)
-			return a;
-		return -1;
-	}
-
 	// Are all 9 spots filled?
-	boolean isDraw() {
+	private boolean isDraw() {
 		for (int i = 0; i < 9; ++i)
 			if (position[i] == BLANK)
 				return false;
@@ -187,6 +193,7 @@ public class GameController {
 			setGameButtonsDisable(false);
 		}
 	}
+	
 
 	public void clickOnButton(int number, String sight) {
 
@@ -230,25 +237,35 @@ public class GameController {
 		}
 
 		position[number] = sight == "X" ? X : O;
+		
 		if (won(position[number])) {
-			if (myTurn) {
-				Alert alert = new Alert(AlertType.INFORMATION);
-				alert.setTitle("Koniec gry");
-				alert.setHeaderText("Wygrales!");
-				alert.showAndWait();
-			} else {
-				Alert alert = new Alert(AlertType.INFORMATION);
-				alert.setTitle("Koniec gry");
-				alert.setHeaderText("Przegrales!");
-				alert.showAndWait();
-			}
 			setGameButtonsDisable(true);
+			
+			Alert alert = new Alert(AlertType.CONFIRMATION);
+			alert.setTitle("Koniec gry");
+			
+			if (myTurn) {
+				alert.setHeaderText("Wygrales!");	
+			} else {
+				alert.setHeaderText("Przegrales!");
+			}
+			
+			alert.setContentText("Chcesz zagrać jeszcze raz?");
+			Optional <ButtonType> action = alert.showAndWait();
+			if(action.get() == ButtonType.OK) {
+				reset();
+			}
 			return;
+			
 		} else if (isDraw()) {
-			Alert alert = new Alert(AlertType.INFORMATION);
+			Alert alert = new Alert(AlertType.CONFIRMATION);
 			alert.setTitle("Koniec gry");
 			alert.setHeaderText("Remis!");
-			alert.showAndWait();
+			alert.setContentText("Chcesz zagrać jeszcze raz?");
+			Optional <ButtonType> action = alert.showAndWait();
+			if(action.get() == ButtonType.OK) {
+				reset();
+			}
 			return;
 		}
 
@@ -258,7 +275,7 @@ public class GameController {
 			setGameButtonsDisable(true);
 			myTurn = false;
 		}
-
+		
 	}
 
 }

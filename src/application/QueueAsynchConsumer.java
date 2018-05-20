@@ -23,6 +23,10 @@ public class QueueAsynchConsumer implements MessageListener {
 					gameController.setPlayers(Integer.parseInt(text.substring(4, text.length())));
 					return;
 				}
+				
+				if (text.length() > 7 && text.substring(0, 7).equals("newgame")) {
+					return;
+				}
 				switch (text) {
 				case "00":
 					System.out.println("Pole 0");
