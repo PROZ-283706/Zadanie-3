@@ -26,7 +26,7 @@ public class GameController {
 	private PTPConsumer consumer;
 	private PTPProducer producer;
 	private boolean myTurn;
-
+	private boolean win;
 	static final char BLANK = ' ', O = 'O', X = 'X';
 	private char position[];
 
@@ -87,6 +87,7 @@ public class GameController {
 		int id = new Random().nextInt(1000000);
 		act = new Player("O", id);
 		myTurn = false;
+		win = false;
 		
 		producer = new PTPProducer(act.getPlayerId());
 		consumer = new PTPConsumer(new QueueAsynchConsumer(this), act.getPlayerId());
@@ -143,20 +144,29 @@ public class GameController {
 		gameBtn21.setText("");
 		gameBtn22.setText("");
 		
-		if(act.getGameChar() == "O") {
-			setGameButtonsDisable(true);
-			myTurn = false;
-		}
-		else {
-			setGameButtonsDisable(false);
-			myTurn = true;
-		}
+		setGameButtonsDisable(true);
+		myTurn = false;
+		//restart = false; 
 		
 		for (int i = 0; i < 9; ++i)
 			position[i] = BLANK;
-
-		producer.sendQueueMessage("newgame"+ act.getPlayerId() + "");
+		
+		if(win == false)
+			producer.sendQueueMessage("newgame"+ act.getPlayerId() + "");
+		 
+		win = false;
 	}
+	
+	public void newGame(int opponentId) {
+		
+		if (act.getGameChar() == "X") {
+			myTurn = true;
+			setGameButtonsDisable(false);
+		} else {
+			producer.sendQueueMessage("newgame"+ act.getPlayerId() + "");
+		}
+	}
+	
 
 	// Return true if player has won
 	private boolean won(char player) {
@@ -245,7 +255,8 @@ public class GameController {
 			alert.setTitle("Koniec gry");
 			
 			if (myTurn) {
-				alert.setHeaderText("Wygrales!");	
+				alert.setHeaderText("Wygrales!");
+				win = true;
 			} else {
 				alert.setHeaderText("Przegrales!");
 			}
@@ -269,11 +280,13 @@ public class GameController {
 			return;
 		}
 
-		setGameButtonsDisable(false);
 
 		if (myTurn) {
 			setGameButtonsDisable(true);
 			myTurn = false;
+		} else {
+			setGameButtonsDisable(false);
+			myTurn = true;
 		}
 		
 	}

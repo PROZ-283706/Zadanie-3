@@ -25,6 +25,7 @@ public class QueueAsynchConsumer implements MessageListener {
 				}
 				
 				if (text.length() > 7 && text.substring(0, 7).equals("newgame")) {
+					gameController.newGame(Integer.parseInt(text.substring(7, text.length())));
 					return;
 				}
 				switch (text) {
@@ -65,7 +66,6 @@ public class QueueAsynchConsumer implements MessageListener {
 					gameController.clickOnButton(8, gameController.getOpponentChar());
 					break;
 				}
-				gameController.setMyTurn(true);
 
 			} catch (JMSException e) {
 				e.printStackTrace();
