@@ -24,6 +24,11 @@ public class QueueAsynchConsumer implements MessageListener {
 					return;
 				}
 				
+				if (text.length() > 7 && text.substring(0, 7).equals("endgame")) {
+					gameController.setEndGame(true);
+					return;
+				}
+				
 				if (text.length() > 7 && text.substring(0, 7).equals("newgame")) {
 					gameController.newGame(Integer.parseInt(text.substring(7, text.length())));
 					return;

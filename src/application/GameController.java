@@ -27,6 +27,7 @@ public class GameController {
 	private PTPProducer producer;
 	private boolean myTurn;
 	private boolean win;
+	private boolean endGame;
 	static final char BLANK = ' ', O = 'O', X = 'X';
 	private char position[];
 
@@ -38,47 +39,56 @@ public class GameController {
 	@FXML private void gameBtn00_Click() {
 		clickOnButton(0, act.getGameChar());
 		producer.sendQueueMessage("00");
+		checkGameResult (0);
 	}
 
 	@FXML private void gameBtn01_Click() {
 
 		clickOnButton(1, act.getGameChar());
 		producer.sendQueueMessage("01");
+		checkGameResult (1);
 	}
 
 	@FXML private void gameBtn02_Click() {
 		clickOnButton(2, act.getGameChar());
 		producer.sendQueueMessage("02");
+		checkGameResult (2);
 	}
 
 	@FXML private void gameBtn10_Click() {
 		clickOnButton(3, act.getGameChar());
 		producer.sendQueueMessage("10");
+		checkGameResult (3);
 	}
 
 	@FXML private void gameBtn11_Click() {
 		clickOnButton(4, act.getGameChar());
 		producer.sendQueueMessage("11");
+		checkGameResult (4);
 	}
 
 	@FXML private void gameBtn12_Click() {
 		clickOnButton(5, act.getGameChar());
 		producer.sendQueueMessage("12");
+		checkGameResult (5);
 	}
 
 	@FXML private void gameBtn20_Click() {
 		clickOnButton(6, act.getGameChar());
 		producer.sendQueueMessage("20");
+		checkGameResult (6);
 	}
 
 	@FXML private void gameBtn21_Click() {
 		clickOnButton(7, act.getGameChar());
 		producer.sendQueueMessage("21");
+		checkGameResult (7);
 	}
 
 	@FXML private void gameBtn22_Click() {
 		clickOnButton(8, act.getGameChar());
 		producer.sendQueueMessage("22");
+		checkGameResult (8);
 	}
 
 	public void initialize() {
@@ -88,6 +98,7 @@ public class GameController {
 		act = new Player("O", id);
 		myTurn = false;
 		win = false;
+		endGame = false;
 		
 		producer = new PTPProducer(act.getPlayerId());
 		consumer = new PTPConsumer(new QueueAsynchConsumer(this), act.getPlayerId());
@@ -146,13 +157,12 @@ public class GameController {
 		
 		setGameButtonsDisable(true);
 		myTurn = false;
-		//restart = false; 
+		endGame = false;
 		
 		for (int i = 0; i < 9; ++i)
 			position[i] = BLANK;
 		
-		if(win == false)
-			producer.sendQueueMessage("newgame"+ act.getPlayerId() + "");
+		producer.sendQueueMessage("newgame"+ act.getPlayerId() + "");
 		 
 		win = false;
 	}
@@ -162,9 +172,8 @@ public class GameController {
 		if (act.getGameChar() == "X") {
 			myTurn = true;
 			setGameButtonsDisable(false);
-		} else {
+		} else
 			producer.sendQueueMessage("newgame"+ act.getPlayerId() + "");
-		}
 	}
 	
 
@@ -202,6 +211,10 @@ public class GameController {
 			gameCharLbl.setText(act.getGameChar());
 			setGameButtonsDisable(false);
 		}
+	}
+	
+	public void setEndGame(boolean endgame) {
+		this.endGame = endgame;
 	}
 	
 
@@ -248,38 +261,16 @@ public class GameController {
 
 		position[number] = sight == "X" ? X : O;
 		
-		if (won(position[number])) {
-			setGameButtonsDisable(true);
-			
-			Alert alert = new Alert(AlertType.CONFIRMATION);
-			alert.setTitle("Koniec gry");
-			
-			if (myTurn) {
-				alert.setHeaderText("Wygrales!");
-				win = true;
-			} else {
-				alert.setHeaderText("Przegrales!");
-			}
-			
-			alert.setContentText("Chcesz zagrać jeszcze raz?");
-			Optional <ButtonType> action = alert.showAndWait();
-			if(action.get() == ButtonType.OK) {
-				reset();
-			}
-			return;
-			
-		} else if (isDraw()) {
-			Alert alert = new Alert(AlertType.CONFIRMATION);
-			alert.setTitle("Koniec gry");
-			alert.setHeaderText("Remis!");
-			alert.setContentText("Chcesz zagrać jeszcze raz?");
-			Optional <ButtonType> action = alert.showAndWait();
-			if(action.get() == ButtonType.OK) {
-				reset();
-			}
+		if(( won(position[number]) || isDraw() ) && endGame == false)
+		{
+			producer.sendQueueMessage("endgame"+ act.getPlayerId() + "");
+			win = true;
+			endGame = true;
+		} else if( endGame == true) {
+			//myTurn = false;
+			checkGameResult (number);
 			return;
 		}
-
 
 		if (myTurn) {
 			setGameButtonsDisable(true);
@@ -289,6 +280,39 @@ public class GameController {
 			myTurn = true;
 		}
 		
+	}
+	
+	void checkGameResult (int number) {
+		
+		if (won(position[number])) {
+			setGameButtonsDisable(true);
+		
+			Alert alert = new Alert(AlertType.CONFIRMATION);
+			alert.setTitle("Koniec gry");
+			
+			if(position[number] == X && act.getGameChar() == "X") {
+				alert.setHeaderText("Wygrales grajac: " + act.getGameChar() + "!");
+			} else if (position[number] == O && act.getGameChar() == "O") {
+				alert.setHeaderText("Wygrales grajac: " + act.getGameChar()  + "!");
+			} else {
+				alert.setHeaderText("Przegrales grajac: " + act.getGameChar()  + "!");
+			}
+			
+			alert.setContentText("Chcesz zagrać jeszcze raz?");
+			Optional <ButtonType> action = alert.showAndWait();
+			if(action.get() == ButtonType.OK) {
+			reset();
+			}
+		} else if (isDraw() ) {
+			Alert alert = new Alert(AlertType.CONFIRMATION);
+			alert.setTitle("Koniec gry");
+			alert.setHeaderText("Remis!");
+			alert.setContentText("Chcesz zagrać jeszcze raz?");
+			Optional <ButtonType> action = alert.showAndWait();
+			if(action.get() == ButtonType.OK) {
+				reset();
+			}
+		}
 	}
 
 }
