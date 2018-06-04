@@ -172,6 +172,8 @@ public class GameController {
 		if (act.getGameChar() == "X") {
 			myTurn = true;
 			setGameButtonsDisable(false);
+		} else if (act.getGameChar() == "O" && myTurn == true) {
+			
 		} else
 			producer.sendQueueMessage("newgame"+ act.getPlayerId() + "");
 	}
@@ -266,8 +268,15 @@ public class GameController {
 			producer.sendQueueMessage("endgame"+ act.getPlayerId() + "");
 			win = true;
 			endGame = true;
+			if (act.getGameChar() == "O") {
+				myTurn = true;
+				return;
+			}
 		} else if( endGame == true) {
 			//myTurn = false;
+			if (act.getGameChar() == "O") {
+				myTurn = true;
+			}
 			checkGameResult (number);
 			return;
 		}
